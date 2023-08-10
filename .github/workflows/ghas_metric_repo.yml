@@ -1,7 +1,8 @@
 name: "GitHub Advanced Security - Metrics Report Action"
 on:
-  schedule:
-    - cron: "*/2 * * * *" # Run every day at 5.30
+  push:
+  #schedule:
+    #- cron: "*/2 * * * *" # Run every day at 5.30
 
 jobs:
   ghas-metrics-report:
