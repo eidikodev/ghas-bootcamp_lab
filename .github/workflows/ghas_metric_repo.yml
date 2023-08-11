@@ -24,7 +24,7 @@ jobs:
           org: ${{ github.repository_owner }}
           features: "dependabot, code-scanning, secret-scanning"
           frequency: "daily"
-          output-format: "json, pdf, issues, github-output"
+          output-format: "issues" #"json, pdf, issues, github-output"
       - name: Upload GHAS metrics report as artifact
         uses: actions/upload-artifact@v3
         with:
