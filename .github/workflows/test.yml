@@ -2,10 +2,10 @@ name: Secret Scanning Alert
 
 on:
   push:
-  secret_scanning_alert:
-    types:
-      - created
-      - resloved
+  #secret_scanning_alert:
+    #types:
+      #- created
+      #- resloved
 
 jobs:
   build:
