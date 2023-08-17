@@ -1,0 +1,17 @@
+name: Secret Scanning Alert
+
+on:
+  secret_scanning_alert:
+    types:
+      - created
+      - resloved
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # Add more steps here as needed for your workflow
