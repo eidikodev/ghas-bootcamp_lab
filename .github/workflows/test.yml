@@ -1,10 +1,9 @@
 name: Secret Scanning Alert
 
 on:
-  push:
-  #secret_scanning_alert:
-    #types:
-      #- created
+  repository_dispatch:
+    types:
+      - code_scanning_alert
       #- resloved
 
 jobs:
