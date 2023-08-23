@@ -3,7 +3,8 @@ name: Create GitHub Issue from Webhook Payload
 on:
   push:
     branches:
-      - main  # Define the branch to trigger the workflow (adjust as needed)
+      - main
+      - Sunil0916-patch-1 # Define the branch to trigger the workflow (adjust as needed)
 
 jobs:
   create-issue:
@@ -19,10 +20,12 @@ jobs:
         # Extract Delivery ID from the webhook payload
         API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
         DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[0].id')
+        
         if [ -z "$DELIVERY_ID" ]; then
           echo "No deliveries found or error in API response."
           exit 1
         fi
+        
         echo "Delivery ID: $DELIVERY_ID"
         echo "::set-output name=delivery_id::$DELIVERY_ID"
     
@@ -31,15 +34,19 @@ jobs:
       run: |
         # Get the webhook payload using the Delivery ID
         DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
+        
         if [ -z "$DELIVERY_ID" ]; then
           echo "No Delivery ID found. Exiting."
           exit 1
         fi
+        
         PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
+        
         if [ -z "$PAYLOAD" ]; then
           echo "No payload found or error in API response."
           exit 1
         fi
+        
         echo "Webhook Payload: $PAYLOAD"
         echo "::set-output name=payload::$PAYLOAD"
     
@@ -53,15 +60,24 @@ jobs:
         HTML_URL=$(echo "$PAYLOAD" | jq -r '.repository.html_url')
         FULL_NAME=$(echo "$PAYLOAD" | jq -r '.repository.full_name')
         
+        if [ -z "$ACTION" ] || [ -z "$HTML_URL" ] || [ -z "$FULL_NAME" ]; then
+          echo "Failed to extract relevant information from the payload."
+          exit 1
+        fi
+        
         # Create a GitHub issue using the extracted information
         ISSUE_TITLE="Webhook Action: $ACTION"
         ISSUE_BODY="This issue is created by a webhook action triggered on the repository: [$FULL_NAME]($HTML_URL)."
         
-        # Create JSON payload for the issue creation request
         JSON_PAYLOAD="{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}"
         
-        # Create the GitHub issue
         ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.API_TOKEN }} -H "Accept: application/vnd.github.v3+json" -d "$JSON_PAYLOAD" "https://api.github.com/repos/${{ github.repository }}/issues")
+        
+        if [ -z "$ISSUE_RESPONSE" ]; then
+          echo "Failed to create GitHub issue."
+          exit 1
+        fi
+        
         echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
     
     - name: Issue Created
