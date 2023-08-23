@@ -24,6 +24,6 @@ jobs:
       - name: Uploading Scanned alerts by repo name
         uses: actions/upload-artifact@v2.2.4
         with:
-          name: code-scan_alert.csv
-          path: code-scan_alert.csv
+          name: code_scanning_alerts.csv
+          path: code_scanning_alerts.csv
           #retention-days: 5
