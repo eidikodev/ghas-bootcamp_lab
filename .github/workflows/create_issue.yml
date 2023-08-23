@@ -76,9 +76,9 @@ jobs:
           exit 1
         fi
         
-        echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
-      env:
-        PAYLOAD: ${{ steps.get-webhook-payload.outputs.payload }}
+        #echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
+      #env:
+        #PAYLOAD: ${{ steps.get-webhook-payload.outputs.payload }}
     
     - name: Issue Created
       if: success()
