@@ -18,8 +18,8 @@ jobs:
           github_token: ${{ secrets.SECRET_TOKEN }}
         run: |
           
-          chmod +x alerts.sh
-          ./alerts.sh
+          chmod +x code-scanning_alerts.sh
+          ./code-scanning_alerts.sh
                 
       - name: Uploading Scanned alerts by repo name
         uses: actions/upload-artifact@v2.2.4
