@@ -44,7 +44,7 @@ jobs:
         ISSUE_TITLE="Webhook Action: $ACTION"
         ISSUE_BODY="This issue is created by a webhook action triggered on the repository: [$FULL_NAME]($HTML_URL)."
         
-        ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.GITHUB_TOKEN }} -H "Accept: application/vnd.github.v3+json" -d "{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}" "https://api.github.com/repos/${{ github.repository }}/issues")
+        ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.API_TOKEN }} -H "Accept: application/vnd.github.v3+json" -d "{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}" "https://api.github.com/repos/${{ github.repository }}/issues")
         echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
     
     - name: Issue Created
