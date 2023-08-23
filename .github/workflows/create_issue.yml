@@ -58,17 +58,17 @@ jobs:
       id: create-github-issue
       run: |
         # Extract relevant information from the payload
-        ACTION=$(echo "$PAYLOAD" | jq -r '.action')
+        #ACTION=$(echo "$PAYLOAD" | jq -r '.action')
         HTML_URL=$(echo "$PAYLOAD" | jq -r '.repository.html_url')
         FULL_NAME=$(echo "$PAYLOAD" | jq -r '.repository.full_name')
         
-        if [ -z "$ACTION" ] || [ -z "$HTML_URL" ] || [ -z "$FULL_NAME" ]; then
+        if [ -z "$HTML_URL" ] || [ -z "$FULL_NAME" ]; then
           echo "Failed to extract relevant information from the payload."
           exit 1
         fi
         
         # Create a GitHub issue using the extracted information
-        ISSUE_TITLE="Webhook Action: $ACTION"
+        ISSUE_TITLE="Webhook Action: $FULL_NAME"
         ISSUE_BODY="This issue is created by a webhook action triggered on the repository: [$FULL_NAME]($HTML_URL)."
         
         JSON_PAYLOAD="{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}"
