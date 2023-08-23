@@ -1,12 +1,12 @@
 #!/bin/bash
 
-echo "Executing scanning alert script..."
+echo "Executing code scanning alert script..."
 jq --version
 
 organization="eidikodev"
 github_api_url='https://api.github.com'
 
-mkdir -p code_scanning_alerts
+echo id, api_url, html_url, severity, name, description, security_severity_level, html_url > alerts.csv
 
 START=1
 total_pages=2
@@ -21,29 +21,20 @@ do
 	echo "${all_repo_list}" | jq -c ".[]" | while read repo; do
 		repo_name=$(echo $repo | jq '.name' | tr -d '"')
 		api_url=$(echo $repo | jq '.url' | tr -d '"')
-		html_url=$(echo $repo | jq '.html_url' | tr -d '"')
         
         alerts_url="${api_url}/code-scanning/alerts"
         alerts_response=$(curl -sSLX GET -H "Authorization: token $github_token" "$alerts_url")
         
-        alerts_count=$(echo "$alerts_response" | jq '. | length')
-        
-        if [ $alerts_count -gt 0 ]; then
-            alerts_csv_file="code_scanning_alerts/${repo_name}_alerts.csv"
+        echo "${alerts_response}" | jq -c ".[]" | while read alert; do
+            id=$(echo $alert | jq -r '.rule.id')
+            api_url=$(echo $alert | jq -r '.url')
+            html_url=$(echo $alert | jq -r '.html_url')
+            severity=$(echo $alert | jq -r '.rule.severity')
+            name=$(echo $alert | jq -r '.rule.name')
+            description=$(echo $alert | jq -r '.rule.description')
+            security_severity_level=$(echo $alert | jq -r '.rule.security_severity_level')
             
-            echo id, api_url, html_url, severity, name, description, security_severity_level, html_url >> "alerts.csv"
-            
-            echo "${alerts_response}" | jq -c ".[]" | while read alert; do
-                id=$(echo $alert | jq -r '.rule.id')
-                api_url=$(echo $alert | jq -r '.url')
-                html_url=$(echo $alert | jq -r '.html_url')
-                severity=$(echo $alert | jq -r '.rule.severity')
-                name=$(echo $alert | jq -r '.rule.name')
-                description=$(echo $alert | jq -r '.rule.description')
-                security_severity_level=$(echo $alert | jq -r '.rule.security_severity_level')
-                
-                echo "${id}, ${api_url}, ${html_url}, ${severity}, ${name}, ${description}, ${security_severity_level}, ${html_url}" >> "alerts.csv"
-            done
-        fi
+            echo "${id}, ${api_url}, ${html_url}, ${severity}, ${name}, ${description}, ${security_severity_level}, ${html_url}" >> alerts.csv
+        done
 	done
 done
