@@ -1,37 +1,29 @@
 #!/bin/bash
 
-set -x  # Enable debugging mode
+echo "Fetching code scanning alerts for the organization..."
 
-echo "Executing code scanning alert script..."
-
-jq --version
+# Set your GitHub token here
+github_token="$SECRET_TOKEN"
 
 organization="eidikodev"
-
 github_api_url="https://api.github.com"
 
-#code_scanning_alert_url_array=$(curl -sSLX GET -H "Authorization: token $github_token" "$github_api_url/orgs/$organization/code-scanning/alerts?per_page=100&page=2" | jq -r '.[] | .url')
-curl -sSLX GET -H "Authorization: token $github_token" "$github_api_url/orgs/$organization/code-scanning/alerts?per_page=100&page=2"
+# Fetch repositories for the organization
+repos_url="${github_api_url}/orgs/${organization}/repos?per_page=100"
+repos_response=$(curl -sSLX GET -H "Authorization: token $github_token" "$repos_url")
 
-# Replace 'API_RESPONSE_JSON' with the actual JSON response from the API
-API_RESPONSE_JSON=$(curl -sSLX GET -H "Authorization: token $github_token" "$github_api_url/orgs/$organization/code-scanning/alerts?per_page=100&page=2")
-URLS=$(echo "$API_RESPONSE_JSON" | jq -r '.[] | .url')
-echo "Extracted URLs: $URLS"
+# Extract repository names from the response
+repo_names=$(echo "$repos_response" | jq -r '.[].name')
 
-echo id, api_url, html_url, severity, name, description, security_severity_level, html_url > code-scan_alert.csv
+# Loop through repositories and fetch code scanning alerts
+echo "repo_name,alert_id,severity,name,description,created_at" > code_scanning_alerts.csv
 
-for url in $code_scanning_alert_url_array; do
-    alert=$(curl -sSLX GET -H "Authorization: token $github_token" "$url")
-
-    alert_line=$(echo "$alert" | jq '.rule | [.id, .severity, .name, .description, .security_severity_level] | @csv')
-
-    html_url=$(echo "$alert" | jq -r '.html_url')
-
-    id=$(echo "$alert" | jq -r '.rule.id')
-    severity=$(echo "$alert" | jq -r '.rule.severity')
-    name=$(echo "$alert" | jq -r '.rule.name')
-    description=$(echo "$alert" | jq -r '.rule.description')
-    security_severity_level=$(echo "$alert" | jq -r '.rule.security_severity_level')
-
-    echo "${id}, ${url}, ${html_url}, ${severity}, ${name}, ${description}, ${security_severity_level}, ${html_url}" >> code-scan_alert.csv
+for repo in $repo_names; do
+    alerts_url="${github_api_url}/repos/${organization}/${repo}/code-scanning/alerts"
+    alerts_response=$(curl -sSLX GET -H "Authorization: token $github_token" "$alerts_url")
+    
+    # Extract alerts information and write to CSV
+    echo "$alerts_response" | jq -r '.alerts[] | [$repo, .databaseId, .severity, .rule.name, .rule.description, .createdAt] | @csv' >> code_scanning_alerts.csv
 done
+
+echo "Code scanning alerts fetched and saved to code_scanning_alerts.csv"
