@@ -3,7 +3,7 @@ name: Code Scanning alerts for Eidikodev
 on:
   workflow_dispatch:
   push:
-    branches: [ branch-trail-1 ]
+    branches: [ branch-trail-2 ]
     
 jobs:
   build:
