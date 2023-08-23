@@ -1,0 +1,29 @@
+name: Code Scanning alerts in Eidikodev
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ branch-trail-1 ]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under github workspace to access the job
+ 
+      - uses: actions/checkout@v2
+
+      - name: Fetch all repo's code-scannings in eidikodev organization 
+        env: 
+          github_token: ${{ secrets.SECRET_TOKEN }}
+        run: |
+          
+          chmod +x alerts.sh
+          ./alerts.sh
+                
+      - name: Uploading Scanned alerts by repo name
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: code-scan_alert.csv
+          path: code-scan_alert.csv
+          #retention-days: 5
