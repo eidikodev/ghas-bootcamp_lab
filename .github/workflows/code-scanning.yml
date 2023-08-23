@@ -1,4 +1,4 @@
-name: Code Scanning alerts in Eidikodev
+name: Code Scanning alerts for Eidikodev
 
 on:
   workflow_dispatch:
