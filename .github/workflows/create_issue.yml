@@ -17,12 +17,7 @@ jobs:
       id: extract-delivery-id
       run: |
         # Extract Delivery ID from the webhook payload
-        API_RESPONSE=$(curl -s -X GET -u ${{ secrets.GITHUB_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
-        DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[0].id')
-        if [ -z "$DELIVERY_ID" ]; then
-          echo "No deliveries found or error in API response."
-          exit 1
-        fi
+        DELIVERY_ID=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries" | jq -r '.[0].id')
         echo "Delivery ID: $DELIVERY_ID"
         echo "::set-output name=delivery_id::$DELIVERY_ID"
     
@@ -31,15 +26,7 @@ jobs:
       run: |
         # Get the webhook payload using the Delivery ID
         DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
-        if [ -z "$DELIVERY_ID" ]; then
-          echo "No Delivery ID found. Exiting."
-          exit 1
-        fi
-        PAYLOAD=$(curl -s -X GET -u ${{ secrets.GITHUB_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
-        if [ -z "$PAYLOAD" ]; then
-          echo "No payload found or error in API response."
-          exit 1
-        fi
+        PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
         echo "Webhook Payload: $PAYLOAD"
         echo "::set-output name=payload::$PAYLOAD"
     
