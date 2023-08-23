@@ -3,8 +3,8 @@ name: Create GitHub Issue from Webhook Payload
 on:
   push:
     branches:
-      - main  # Define the branch to trigger the workflow (adjust as needed)
-      - Sunil0916-patch-1
+      - Sunil0916-patch-1  # Define the branch to trigger the workflow (adjust as needed)
+
 jobs:
   create-issue:
     runs-on: ubuntu-latest
@@ -49,6 +49,11 @@ jobs:
         echo "Webhook Payload: $PAYLOAD"
         echo "::set-output name=payload::$PAYLOAD"
     
+    - name: Debug - Output Payload
+      run: |
+        echo "Debug - Outputting Payload:"
+        echo "$PAYLOAD"
+    
     - name: Create GitHub Issue
       id: create-github-issue
       run: |
@@ -69,16 +74,16 @@ jobs:
         JSON_PAYLOAD="{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}"
         
         # Create the GitHub issue
-        ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.API_TOKEN }} -H "Accept: application/vnd.github.v3+json" -d "$JSON_PAYLOAD" "https://api.github.com/repos/${{ github.repository }}/issues")
+        ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.API_TOKEN }} -H "Accept: application/vnd.github.v3+json" -d "$JSON_PAYLOAD" "https://api.github.com/repos/eidikodev/ghas-bootcamp_lab/issues")
         
         if [ -z "$ISSUE_RESPONSE" ]; then
           echo "Failed to create GitHub issue."
           exit 1
         fi
         
-        #echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
-      #env:
-        #PAYLOAD: ${{ steps.get-webhook-payload.outputs.payload }}
+        echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
+      env:
+        PAYLOAD: ${{ steps.get-webhook-payload.outputs.payload }}
     
     - name: Issue Created
       if: success()
