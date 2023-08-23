@@ -31,7 +31,7 @@ do
         if [ $alerts_count -gt 0 ]; then
             alerts_csv_file="code_scanning_alerts/${repo_name}_alerts.csv"
             
-            echo id, api_url, html_url, severity, name, description, security_severity_level, html_url > "$alerts_csv_file"
+            echo id, api_url, html_url, severity, name, description, security_severity_level, html_url >> "alerts.csv"
             
             echo "${alerts_response}" | jq -c ".[]" | while read alert; do
                 id=$(echo $alert | jq -r '.rule.id')
@@ -42,7 +42,7 @@ do
                 description=$(echo $alert | jq -r '.rule.description')
                 security_severity_level=$(echo $alert | jq -r '.rule.security_severity_level')
                 
-                echo "${id}, ${api_url}, ${html_url}, ${severity}, ${name}, ${description}, ${security_severity_level}, ${html_url}" >> "$alerts_csv_file"
+                echo "${id}, ${api_url}, ${html_url}, ${severity}, ${name}, ${description}, ${security_severity_level}, ${html_url}" >> "alerts.csv"
             done
         fi
 	done
