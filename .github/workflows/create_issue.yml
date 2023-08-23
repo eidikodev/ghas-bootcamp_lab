@@ -1,0 +1,52 @@
+name: Create GitHub Issue from Webhook Payload
+
+on:
+  push:
+    branches:
+      - main  # Define the branch to trigger the workflow (adjust as needed)
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Extract Delivery ID
+      id: extract-delivery-id
+      run: |
+        # Extract Delivery ID from the webhook payload
+        DELIVERY_ID=$(curl -s -X GET -u ${{ secrets.GITHUB_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries" | jq -r '.[0].id')
+        echo "Delivery ID: $DELIVERY_ID"
+        echo "::set-output name=delivery_id::$DELIVERY_ID"
+    
+    - name: Get Webhook Payload
+      id: get-webhook-payload
+      run: |
+        # Get the webhook payload using the Delivery ID
+        DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
+        PAYLOAD=$(curl -s -X GET -u ${{ secrets.GITHUB_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
+        echo "Webhook Payload: $PAYLOAD"
+        echo "::set-output name=payload::$PAYLOAD"
+    
+    - name: Create GitHub Issue
+      id: create-github-issue
+      env:
+        PAYLOAD: ${{ steps.get-webhook-payload.outputs.payload }}
+      run: |
+        # Extract relevant information from the payload
+        ACTION=$(echo $PAYLOAD | jq -r '.action')
+        HTML_URL=$(echo $PAYLOAD | jq -r '.repository.html_url')
+        FULL_NAME=$(echo $PAYLOAD | jq -r '.repository.full_name')
+        
+        # Create a GitHub issue using the extracted information
+        ISSUE_TITLE="Webhook Action: $ACTION"
+        ISSUE_BODY="This issue is created by a webhook action triggered on the repository: [$FULL_NAME]($HTML_URL)."
+        
+        ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.GITHUB_TOKEN }} -H "Accept: application/vnd.github.v3+json" -d "{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}" "https://api.github.com/repos/${{ github.repository }}/issues")
+        echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
+    
+    - name: Issue Created
+      if: success()
+      run: echo "GitHub issue created successfully."
