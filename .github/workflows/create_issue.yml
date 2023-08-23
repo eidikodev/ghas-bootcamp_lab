@@ -52,7 +52,7 @@ jobs:
     - name: Debug - Output Payload
       run: |
         echo "Debug - Outputting Payload:"
-        echo "$PAYLOAD"
+        echo $PAYLOAD
     
     - name: Create GitHub Issue
       id: create-github-issue
