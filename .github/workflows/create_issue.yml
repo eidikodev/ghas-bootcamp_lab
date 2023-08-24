@@ -49,7 +49,7 @@ jobs:
         ACTION=$(echo "$PAYLOAD" | jq -r '.action')
         
         # Check if the action is "created" and proceed to create the issue
-        if [ "$ACTION" != "reopened" ]; then
+        if [ "$ACTION" != "created" ]; then
           echo "Action is not 'created'. Exiting."
           exit 0  # Exit with success status (no issue creation)
         fi
