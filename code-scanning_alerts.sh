@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Executing code scanning alert script..."
+echo "Executing code scanning alert script...."
 jq --version
 
 organization="eidikodev"
