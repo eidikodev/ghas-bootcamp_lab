@@ -45,9 +45,11 @@ jobs:
         fi
         echo "Webhook Payload: $PAYLOAD"
         echo "::set-output name=payload::$PAYLOAD"
-        ACTION=$(echo "$PAYLOAD" | jq -r '.repository.name')
-        HTML_URL=$(echo "$PAYLOAD" | jq -r '.repository.html_url')
-        FULL_NAME=$(echo "$PAYLOAD" | jq -r '.repository.full_name')
+        _jq() {
+              echo ${PAYLOAD} | base64 --decode | jq -r ${1}
+            }
+        ACTION=$(_jq '.repository.name')
+        FULL_NAME=$(_jq '.repository.full_name')
         ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$FULL_NAME\",\"body\":\"$FULL_NAME\"}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
         echo "GitHub Issuee Creation Response: $ISSUE_RESPONSE"
     
