@@ -46,10 +46,10 @@ jobs:
         echo "Webhook Payload: $PAYLOAD"
         
         # Extract the "action" field from the payload
-        ACTION=$(echo "$PAYLOAD" | jq -r '.action')
+        ACTION=$(echo "$PAYLOAD" | jq -r '.reopened')
         
         # Check if the action is "created" and proceed to create the issue
-        if [ "$ACTION" != "created" ]; then
+        if [ "$ACTION" != "reopened" ]; then
           echo "Action is not 'created'. Exiting."
           exit 0  # Exit with success status (no issue creation)
         fi
