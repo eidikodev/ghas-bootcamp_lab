@@ -1,9 +1,10 @@
 name: Create GitHub Issue from Webhook Payload
 
 on:
-  push:
-    branches:
-      - main  # Define the branch to trigger the workflow (adjust as needed)
+  workflow_dispatch
+  #push:
+    #branches:
+      #- main  # Define the branch to trigger the workflow (adjust as needed)
 
 jobs:
   create-issue:
