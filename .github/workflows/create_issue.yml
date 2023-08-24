@@ -44,8 +44,8 @@ jobs:
           exit 1
         fi
         echo "Webhook Payload: $PAYLOAD"
-        NAME=$(echo "$PAYLOAD" | jq -r '.repository.name')
-        FULL_NAME=$(echo "$PAYLOAD" | jq -r '.repository.full_name')
+        NAME=$(echo "$PAYLOAD" | jq -r '.request.payload.repository.name')
+        FULL_NAME=$(echo "$PAYLOAD" | jq -r '.request.payload.repository.full_name')
         echo $NAME
         echo $FULL_NAME
         ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$NAME\",\"body\":\"$FULL_NAME\"}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
