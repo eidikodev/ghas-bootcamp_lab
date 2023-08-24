@@ -45,7 +45,7 @@ jobs:
         fi
         echo "Webhook Payload: $PAYLOAD"
         _jq() {
-              echo ${PAYLOAD} | base64 --decode | jq -r ${1}
+              echo ${PAYLOAD} | jq -r ${1}
         }
         ACTION=$(_jq '.repository.name')
         echo $ACTION
