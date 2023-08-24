@@ -62,7 +62,7 @@ jobs:
         
         # Create the GitHub issue
         ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
-        echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
+        echo "GitHub Issuee Creation Response: $ISSUE_RESPONSE"
     
     - name: Issue Created
       if: success()
