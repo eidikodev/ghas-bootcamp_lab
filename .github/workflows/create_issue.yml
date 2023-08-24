@@ -49,30 +49,7 @@ jobs:
         echo "Webhook Payload: $PAYLOAD"
         echo "::set-output name=payload::$PAYLOAD"
     
-    - name: Create GitHub Issue
-      id: create-github-issue
-      uses: actions/github-script@v4
-      with:
-        script: |
-          // Extract relevant information from the payload
-          const payload = JSON.parse(process.env.PAYLOAD);
-          const ACTION = payload.action;
-          const HTML_URL = payload.repository.html_url;
-          const FULL_NAME = payload.repository.full_name;
-          
-          // Create a GitHub issue using the extracted information
-          const ISSUE_TITLE = `Webhook Action: ${ACTION}`;
-          const ISSUE_BODY = `This issue is created by a webhook action triggered on the repository: [${FULL_NAME}](${HTML_URL}).`;
-          
-          const response = await github.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: ISSUE_TITLE,
-            body: ISSUE_BODY
-          });
-          
-          console.log(`GitHub Issue Creation Response: ${response.status}`);
-    
-    - name: Issue Created
-      if: success()
-      run: echo "GitHub issue created successfully."
+    - name: Debug Payload
+      run: |
+        echo "Debug - PAYLOAD:"
+        echo "$PAYLOAD"
