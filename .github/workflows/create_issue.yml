@@ -27,7 +27,7 @@ jobs:
         echo "Delivery ID: $DELIVERY_ID"
         echo "::set-output name=delivery_id::$DELIVERY_ID"
     
-    - name: Get Webhook Payload
+    - name: Get Webhook Payload and Create Issue  
       id: get-webhook-payload
       run: |
         # Get the webhook payload using the Delivery ID
