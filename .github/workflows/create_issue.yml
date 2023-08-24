@@ -58,10 +58,10 @@ jobs:
         ISSUE_BODY="This issue is created by a webhook action triggered on the repository: [$FULL_NAME]($HTML_URL)."
         
         # Create JSON payload for the issue creation request
-        JSON_PAYLOAD={"title":"$ISSUE_TITLE","body":"$ISSUE_BODY"}'
+        JSON_PAYLOAD="{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}"
         
         # Create the GitHub issue
-        ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$I_NUM\",\"body\":\"$I_NUM\"}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
+        ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$ISSUE_TITLE\",\"body\":\"$ISSUE_BODY\"}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
         echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
     
     - name: Issue Created
