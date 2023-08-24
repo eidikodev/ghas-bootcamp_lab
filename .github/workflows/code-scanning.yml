@@ -3,7 +3,7 @@ name: Code Scanning alerts for Eidikodev
 on:
   workflow_dispatch:
   push:
-    branches: [ branch-trail-1 ]
+    branches: [ branch-trail-2 ]
     
 jobs:
   build:
@@ -24,6 +24,6 @@ jobs:
       - name: Uploading Scanned alerts by repo name
         uses: actions/upload-artifact@v2.2.4
         with:
-          name: code_scanning_alerts.csv
-          path: code_scanning_alerts.csv
+          name: alerts.csv
+          path: alerts.csv
           #retention-days: 5
