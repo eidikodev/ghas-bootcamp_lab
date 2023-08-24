@@ -44,12 +44,23 @@ jobs:
           exit 1
         fi
         echo "Webhook Payload: $PAYLOAD"
+        
+        # Extract the "action" field from the payload
+        ACTION=$(echo "$PAYLOAD" | jq -r '.action')
+        
+        # Check if the action is "created" and proceed to create the issue
+        if [ "$ACTION" != "created" ]; then
+          echo "Action is not 'created'. Exiting."
+          exit 0  # Exit with success status (no issue creation)
+        fi
+        
+        # If the action is "created," proceed to create the issue
         NAME=$(echo "$PAYLOAD" | jq -r '.request.payload.repository.name')
         FULL_NAME=$(echo "$PAYLOAD" | jq -r '.request.payload.repository.full_name')
         echo $NAME
         echo $FULL_NAME
         ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$NAME\",\"body\":\"$FULL_NAME\"}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
-        echo "GitHub Issuee Creation Response: $ISSUE_RESPONSE"
+        echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
     
     - name: Issue Created
       if: success()
