@@ -56,7 +56,7 @@ jobs:
         fi
         
         # If the action is "created," proceed to create the issue
-        SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.action.secret_type')
+        SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
         FULL_NAME=$(echo "$PAYLOAD" | jq -r '.request.payload.repository.full_name')
         echo $SECRET
         echo $FULL_NAME
