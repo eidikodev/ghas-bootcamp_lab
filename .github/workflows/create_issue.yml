@@ -58,6 +58,7 @@ jobs:
         # If the action is "created," proceed to create the issue
         SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
         HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
+        ASSIGNEE="srkambham"
         echo $SECRET
         echo $HTML_URL
         ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\"}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
