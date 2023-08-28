@@ -2,8 +2,6 @@ name: Check and Create GitHub Issue
 
 on:
   workflow_dispatch
-  #schedule:
-    #- cron: '0 */12 * * *'  # Run every 12 hours
 
 jobs:
   check-and-create-issue:
@@ -39,6 +37,8 @@ jobs:
           IFS=$'\n' read -rd '' -a DELIVERY_ID_ARRAY <<< "$DELIVERY_IDS"
 
           for DELIVERY_ID in "${DELIVERY_ID_ARRAY[@]}"; do
+            echo "Processing DELIVERY_ID: $DELIVERY_ID"
+            
             # Check if DELIVERY_ID is in the stored data
             if grep -q "$DELIVERY_ID" stored_data.txt; then
               echo "DELIVERY_ID $DELIVERY_ID already processed. Skipping."
@@ -58,8 +58,8 @@ jobs:
               SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.action.secret_type')
               FULL_NAME=$(echo "$PAYLOAD" | jq -r '.request.payload.repository.full_name')
               echo "Creating issue for DELIVERY_ID $DELIVERY_ID"
-              echo $SECRET
-              echo $FULL_NAME
+              echo "SECRET: $SECRET"
+              echo "FULL_NAME: $FULL_NAME"
               ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$FULL_NAME\"}" "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/issues")
               echo "GitHub Issue Creation Response for DELIVERY_ID $DELIVERY_ID: $ISSUE_RESPONSE"
               # Store the processed DELIVERY_ID and its creation time
