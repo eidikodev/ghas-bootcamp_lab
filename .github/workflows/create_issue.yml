@@ -1,74 +1,58 @@
-name: Check and Create GitHub Issue
+name: Create GitHub Issue from Webhook Payload
 
 on:
   workflow_dispatch
+  # You might want to use a scheduled event like "schedule" or trigger on specific actions like "push" for a production workflow.
 
 jobs:
-  check-and-create-issue:
+  create-issues:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Extract Delivery IDs
-        id: extract-delivery-ids
-        run: |
-          # Extract all DELIVERY_IDs from the webhook payloads
-          API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
-          DELIVERY_IDS=$(echo $API_RESPONSE | jq -r '.[].id')
-          echo "Delivery IDs: $DELIVERY_IDS"
-          echo "::set-output name=delivery_ids::$DELIVERY_IDS"
+    - name: Extract Delivery IDs
+      id: extract-delivery-ids
+      run: |
+        # Extract Delivery IDs from the webhook payload
+        API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
+        DELIVERY_IDS=$(echo "$API_RESPONSE" | jq -r '.[].id')
+        echo "Delivery IDs: $DELIVERY_IDS"
+        echo "::set-output name=delivery_ids::$DELIVERY_IDS"
 
-      - name: Load Stored Data
-        id: load-stored-data
-        run: |
-          # Load previously stored DELIVERY_IDs and their creation times (if available)
-          if [ -f stored_data.txt ]; then
-            cat stored_data.txt
+    - name: Process Delivery IDs
+      id: process-delivery-ids
+      run: |
+        DELIVERY_IDS="${{ steps.extract-delivery-ids.outputs.delivery_ids }}"
+        IFS=$'\n' read -rd '' -a DELIVERY_ID_ARRAY <<< "$DELIVERY_IDS"
+
+        for DELIVERY_ID in "${DELIVERY_ID_ARRAY[@]}"; do
+          echo "Processing DELIVERY_ID: $DELIVERY_ID"
+          PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
+          
+          if [ -z "$PAYLOAD" ]; then
+            echo "No payload found for DELIVERY_ID $DELIVERY_ID."
+            continue
           fi
-        continue-on-error: true  # Ignore if the file does not exist
 
-      - name: Process Delivery IDs
-        id: process-delivery-ids
-        run: |
-          # Process the DELIVERY_IDs
-          DELIVERY_IDS="${{ steps.extract-delivery-ids.outputs.delivery_ids }}"
-          IFS=$'\n' read -rd '' -a DELIVERY_ID_ARRAY <<< "$DELIVERY_IDS"
+          ACTION=$(echo "$PAYLOAD" | jq -r '.action')
 
-          for DELIVERY_ID in "${DELIVERY_ID_ARRAY[@]}"; do
-            echo "Processing DELIVERY_ID: $DELIVERY_ID"
-            
-            # Check if DELIVERY_ID is in the stored data
-            if grep -q "$DELIVERY_ID" stored_data.txt; then
-              echo "DELIVERY_ID $DELIVERY_ID already processed. Skipping."
-              continue
-            fi
+          # Check if the action is "created" and proceed to create the issue
+          if [ "$ACTION" == "created" ]; then
+            SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
+            HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
+            ASSIGNEE="srkambham"  # Specify the assignee's username here
+            echo "Creating issue for DELIVERY_ID $DELIVERY_ID"
+            echo "SECRET: $SECRET"
+            echo "HTML_URL: $HTML_URL"
+            ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/issues")
+            echo "GitHub Issue Creation Response for DELIVERY_ID $DELIVERY_ID: $ISSUE_RESPONSE"
+          else
+            echo "Action for DELIVERY_ID $DELIVERY_ID is not 'created'. Skipping."
+          fi
+        done
 
-            PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
-            if [ -z "$PAYLOAD" ]; then
-              echo "No payload found for DELIVERY_ID $DELIVERY_ID."
-              continue
-            fi
-
-            ACTION=$(echo "$PAYLOAD" | jq -r '.action')
-
-            # Check if the action is "reopened" and proceed to create the issue
-            if [ "$ACTION" == "reopened" ]; then
-              SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.action.secret_type')
-              FULL_NAME=$(echo "$PAYLOAD" | jq -r '.request.payload.repository.full_name')
-              echo "Creating issue for DELIVERY_ID $DELIVERY_ID"
-              echo "SECRET: $SECRET"
-              echo "FULL_NAME: $FULL_NAME"
-              ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$FULL_NAME\"}" "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/issues")
-              echo "GitHub Issue Creation Response for DELIVERY_ID $DELIVERY_ID: $ISSUE_RESPONSE"
-              # Store the processed DELIVERY_ID and its creation time
-              echo "$DELIVERY_ID $(date +'%Y-%m-%d %H:%M:%S')" >> stored_data.txt
-            else
-              echo "Action for DELIVERY_ID $DELIVERY_ID is not 'reopened'. Skipping."
-            fi
-          done
-
-      - name: Issue Created
-        if: success()
-        run: echo "GitHub issues created successfully."
+    - name: Issue Created
+      if: success()
+      run: echo "GitHub issues created successfully."
