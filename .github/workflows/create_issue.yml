@@ -1,8 +1,9 @@
 name: Create GitHub Issues from Webhook Payload
 
 on:
-  push
   
+  push
+    
 jobs:
   create-issues:
     runs-on: ubuntu-latest
@@ -18,9 +19,16 @@ jobs:
         API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
         echo "::set-output name=deliveries::$API_RESPONSE"
     
-    - name: Loop through Deliveries and Create Issues
+    - name: Create Issues
       run: |
         deliveries="${{ steps.get-webhook-deliveries.outputs.deliveries }}"
+        
+        # Check if deliveries is empty or not a valid JSON array
+        if [ -z "$deliveries" ] || [ "$deliveries" == "[]" ]; then
+          echo "No webhook deliveries found."
+          exit 0  # Exit with success status
+        fi
+        
         for delivery in $(echo "$deliveries" | jq -r '.[].id'); do
           # Get the webhook payload using the Delivery ID
           PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/$delivery")
@@ -36,13 +44,22 @@ jobs:
           DELIVERY_TIMESTAMP=$(date -d "$DELIVERY_TIMESTAMP" +%s)
           TIME_DIFF=$((CURRENT_TIMESTAMP - DELIVERY_TIMESTAMP))
           
-          # Check if the action is "created" and within the last 24 hours
-          if [ "$ACTION" = "closed_by_user" ] && [ "$TIME_DIFF" -le 86400 ]; then
-            SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.url')
+          # Check if the action is "created" and the delivery is within the last 24 hours
+          if [ "$ACTION" == "created" ] && [ "$TIME_DIFF" -le 86400 ]; then
+            URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.url')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
             ASSIGNEE="srkambham"  # Specify the assignee's username here
+            
+            # Create an issue
             echo "Creating issue for Delivery ID: $delivery"
-            ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/${{ github.repository }}/issues")
-            echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
+            ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$URL\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/${{ github.repository }}/issues")
+            
+            # Check if the issue creation was successful
+            if [[ $ISSUE_RESPONSE == *"created_at"* ]]; then
+              echo "GitHub issue created successfully."
+            else
+              echo "Failed to create GitHub issue."
+              exit 1  # Exit with an error status
+            fi
           fi
         done
