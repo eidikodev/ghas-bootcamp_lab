@@ -20,15 +20,15 @@ jobs:
 
           # Fetch delivery IDs within the last 24 hours
           API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries?since=$START_TIMESTAMP")
-          
+
           # Check if the response is empty or not valid JSON
-          if ! jq -e . >/dev/null 2>&1 <<<"$API_RESPONSE"; then
-            echo "Invalid JSON response or empty response."
+          if [[ $API_RESPONSE == *"Not Found"* || $API_RESPONSE == *"404 Not Found"* ]]; then
+            echo "Webhook not found or repository does not exist."
             exit 1
           fi
-          
-          # Extract the "id" field from the JSON
-          DELIVERY_IDS=($(echo "$API_RESPONSE" | jq -r '.[].id'))
+
+          # Extract the "id" field from the JSON (if it exists)
+          DELIVERY_IDS=($(echo "$API_RESPONSE" | jq -r '.[].id // empty'))
 
           if [ ${#DELIVERY_IDS[@]} -eq 0 ]; then
             echo "No delivery IDs found within the last 24 hours."
@@ -46,12 +46,16 @@ jobs:
 
           # Iterate through the delivery IDs
           for DELIVERY_ID in "${DELIVERY_IDS[@]}"; do
+            if [ -z "$DELIVERY_ID" ]; then
+              continue  # Skip empty delivery IDs
+            fi
+
             # Get the payload for the delivery ID
             PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/$DELIVERY_ID")
 
             # Check if the response is empty or not valid JSON
-            if ! jq -e . >/dev/null 2>&1 <<<"$PAYLOAD"; then
-              echo "Invalid JSON response or empty response for Delivery ID $DELIVERY_ID."
+            if [[ $PAYLOAD == *"Not Found"* || $PAYLOAD == *"404 Not Found"* ]]; then
+              echo "Delivery ID $DELIVERY_ID not found or payload is empty."
               continue  # Skip to the next Delivery ID if this one is not valid.
             fi
 
