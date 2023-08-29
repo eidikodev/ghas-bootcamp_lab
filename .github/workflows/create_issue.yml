@@ -1,80 +1,51 @@
-name: Create GitHub Issue from Webhook Payload
+name: Create GitHub Issues from Webhook Payload
 
 on:
   workflow_dispatch
-  # You may want to trigger this workflow based on other events or schedules as needed.
+  push:
+    branches:
+      - main  # Define the branch to trigger the workflow (adjust as needed)
 
 jobs:
   create-issues:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Fetch Delivery IDs within 24 hours
-        id: fetch-delivery-ids
-        run: |
-          # Calculate the timestamp for 24 hours ago
-          START_TIMESTAMP=$(date -u -d '24 hours ago' +%FT%TZ)
-
-          # Fetch delivery IDs within the last 24 hours
-          API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries?since=$START_TIMESTAMP")
-
-          # Check if the response is empty or not valid JSON
-          if [[ $API_RESPONSE == *"Not Found"* || $API_RESPONSE == *"404 Not Found"* ]]; then
-            echo "Webhook not found or repository does not exist."
-            exit 1
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Get Webhook Deliveries
+      id: get-webhook-deliveries
+      run: |
+        # Get all webhook deliveries
+        API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
+        echo "::set-output name=deliveries::$API_RESPONSE"
+    
+    - name: Loop through Deliveries and Create Issues
+      run: |
+        deliveries="${{ steps.get-webhook-deliveries.outputs.deliveries }}"
+        for delivery in $(echo "$deliveries" | jq -r '.[].id'); do
+          # Get the webhook payload using the Delivery ID
+          PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/$delivery")
+          
+          # Extract the "action" field from the payload
+          ACTION=$(echo "$PAYLOAD" | jq -r '.action')
+          
+          # Get the timestamp of the delivery
+          DELIVERY_TIMESTAMP=$(echo "$PAYLOAD" | jq -r '.created_at')
+          
+          # Calculate the time difference in seconds
+          CURRENT_TIMESTAMP=$(date +%s)
+          DELIVERY_TIMESTAMP=$(date -d "$DELIVERY_TIMESTAMP" +%s)
+          TIME_DIFF=$((CURRENT_TIMESTAMP - DELIVERY_TIMESTAMP))
+          
+          # Check if the action is "created" and within the last 24 hours
+          if [ "$ACTION" = "closed_by_user" ] && [ "$TIME_DIFF" -le 86400 ]; then
+            SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.url')
+            HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
+            ASSIGNEE="srkambham"  # Specify the assignee's username here
+            echo "Creating issue for Delivery ID: $delivery"
+            ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/${{ github.repository }}/issues")
+            echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
           fi
-
-          # Extract the "id" field from the JSON (if it exists)
-          DELIVERY_IDS=($(echo "$API_RESPONSE" | jq -r '.[].id // empty'))
-
-          if [ ${#DELIVERY_IDS[@]} -eq 0 ]; then
-            echo "No delivery IDs found within the last 24 hours."
-            exit 0  # Exit gracefully if no delivery IDs are found.
-          fi
-
-          echo "Delivery IDs within the last 24 hours: ${DELIVERY_IDS[@]}"
-          echo "::set-output name=delivery_ids::${DELIVERY_IDS[@]}"
-
-      - name: Create issues for selected delivery IDs
-        id: create-issues
-        run: |
-          # Split the comma-separated list of delivery IDs
-          IFS=',' read -ra DELIVERY_IDS <<< "${{ steps.fetch-delivery-ids.outputs.delivery_ids }}"
-
-          # Iterate through the delivery IDs
-          for DELIVERY_ID in "${DELIVERY_IDS[@]}"; do
-            if [ -z "$DELIVERY_ID" ]; then
-              continue  # Skip empty delivery IDs
-            fi
-
-            # Get the payload for the delivery ID
-            PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/$DELIVERY_ID")
-
-            # Check if the response is empty or not valid JSON
-            if [[ $PAYLOAD == *"Not Found"* || $PAYLOAD == *"404 Not Found"* ]]; then
-              echo "Delivery ID $DELIVERY_ID not found or payload is empty."
-              continue  # Skip to the next Delivery ID if this one is not valid.
-            fi
-
-            # Extract the "action" field from the payload
-            ACTION=$(echo "$PAYLOAD" | jq -r '.action')
-
-            # Check if the action is "created" and proceed to create the issue
-            if [ "$ACTION" == "created" ]; then
-              SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
-              HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-              ASSIGNEE="srkambham"  # Specify the assignee's username here
-              
-              # Create the issue
-              ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/${{ github.repository }}/issues")
-              
-              echo "GitHub Issue Creation Response for Delivery ID $DELIVERY_ID: $ISSUE_RESPONSE"
-            fi
-          done
-
-      - name: Issues Created
-        if: always()  # This step will always run, even if no issues were created.
-        run: echo "GitHub issues created successfully."
+        done
