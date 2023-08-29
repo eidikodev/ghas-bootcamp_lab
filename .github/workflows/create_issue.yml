@@ -3,7 +3,6 @@ name: Create GitHub Issues from Webhook Payload
 on:
   workflow_dispatch
   
-
 jobs:
   create-issues:
     runs-on: ubuntu-latest
