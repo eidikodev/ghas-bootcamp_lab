@@ -50,13 +50,13 @@ jobs:
         ACTION=$(echo "$PAYLOAD" | jq -r '.action')
         
         # Check if the action is "created" and proceed to create the issue
-        if [ "$ACTION" != "reopened" ]; then
+        if [ "$ACTION" != "reopened_by_user" ]; then
           echo "Action is not 'created'. Exiting."
           exit 0  # Exit with success status (no issue creation)
         fi
         
         # If the action is "created," proceed to create the issue
-        SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
+        SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.rule.description')
         HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
         ASSIGNEE="srkambham"  # Specify the assignee's username here
         echo $SECRET
