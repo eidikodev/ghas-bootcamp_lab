@@ -3,7 +3,7 @@ name: Create GitHub Issues from Webhook Payload
 on:
   
   push
-    
+   
 jobs:
   create-issues:
     runs-on: ubuntu-latest
@@ -22,12 +22,6 @@ jobs:
     - name: Create Issues
       run: |
         deliveries="${{ steps.get-webhook-deliveries.outputs.deliveries }}"
-        
-        # Check if deliveries is empty or not a valid JSON array
-        if [ -z "$deliveries" ] || [ "$deliveries" == "[]" ]; then
-          echo "No webhook deliveries found."
-          exit 0  # Exit with success status
-        fi
         
         for delivery in $(echo "$deliveries" | jq -r '.[].id'); do
           # Get the webhook payload using the Delivery ID
@@ -59,7 +53,6 @@ jobs:
               echo "GitHub issue created successfully."
             else
               echo "Failed to create GitHub issue."
-              exit 1  # Exit with an error status
             fi
           fi
         done
