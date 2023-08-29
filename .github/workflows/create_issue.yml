@@ -1,7 +1,7 @@
 name: Create GitHub Issues from Webhook Payload
 
 on:
-  workflow_dispatch
+  push
   
 jobs:
   create-issues:
