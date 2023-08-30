@@ -58,8 +58,7 @@ jobs:
           echo "Webhook Payload"
           ACTION=$(echo "$PAYLOAD" | jq -r '.action')
           if [ "$ACTION" != "reopened" ]; then
-            echo "Action is not 'created'. Exiting."
-            exit 0  # Exit with success status (no issue creation)
+            echo "Action is not 'created'. Skipping further process for delivery ID: $DELIVERY_ID"
           else
             SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
