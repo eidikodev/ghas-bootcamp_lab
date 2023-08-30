@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     
-    - name: Extract Delivery ID
+    - name: Extract Deliveries
       id: extract-delivery-id
       run: |
         # Extract Delivery ID from the webhook payload
@@ -27,8 +27,6 @@ jobs:
         fi
         echo "Delivery ID: $DELIVERY_ID"
         echo $API_RESPONSE >> deliveries.json
-        echo "::set-output name=deliveries::$(cat deliveries.json)"
-        echo "::set-output name=delivery_id::$DELIVERY_ID"
     
     - name: Get Webhook Payload
       id: get-webhook-payload
