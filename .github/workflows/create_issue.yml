@@ -19,7 +19,7 @@ jobs:
         # Extract Delivery ID from the webhook payload
         API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
         echo $API_RESPONSE
-        DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[] | select(.created_at | fromdateiso8601 < (now - 86400)) | select(.payload.action == "created") | .id')
+        DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[] | select(.created_at | fromdateiso8601 < (now - 86400)) | select(.payload.action == "reopened") | .id')
         if [ -z "$DELIVERY_ID" ]; then
           echo "No deliveries found or error in API response."
           exit 1
