@@ -26,7 +26,7 @@ jobs:
           exit 1
         fi
         echo "Delivery ID: $DELIVERY_ID"
-        echo '$API_RESPONSE' >> json_data.json
+        echo '[{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]' >> json_data.json
         echo "::set-output name=deliveries::$(cat json_data.json)"
         echo "::set-output name=delivery_id::$DELIVERY_ID"
     
