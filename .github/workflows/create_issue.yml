@@ -43,40 +43,34 @@ jobs:
           _jq() {
               echo ${DELI} | base64 --decode | jq -r ${1}
             }
-          DID=$(_jq '.id')
-          echo $DID
+          DELIVERY_ID=$(_jq '.id')
+          echo $DELIVERY_ID
+          if [ -z "$DELIVERY_ID" ]; then
+            echo "No Delivery ID found. Exiting."
+            exit 1
+          fi
+
+          PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
+          if [ -z "$PAYLOAD" ]; then
+            echo "No payload found or error in API response."
+            exit 1
+          fi
+          echo "Webhook Payload"
+          ACTION=$(echo "$PAYLOAD" | jq -r '.action')
+          if [ "$ACTION" != "reopened" ]; then
+            echo "Action is not 'created'. Exiting."
+            exit 0  # Exit with success status (no issue creation)
+          fi
+
+          SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
+          HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
+          ASSIGNEE="srkambham"  # Specify the assignee's username here
+          echo $SECRET
+          echo $HTML_URL
+          ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
+          echo "GitHub Issue Creation Response:"
         done
         echo "======================================================================"
-        DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
-        echo $DELIVERY_ID
-        if [ -z "$DELIVERY_ID" ]; then
-          echo "No Delivery ID found. Exiting."
-          exit 1
-        fi
-        PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
-        if [ -z "$PAYLOAD" ]; then
-          echo "No payload found or error in API response."
-          exit 1
-        fi
-        echo "Webhook Payload: $PAYLOAD"
-        
-        # Extract the "action" field from the payload
-        ACTION=$(echo "$PAYLOAD" | jq -r '.action')
-        
-        # Check if the action is "created" and proceed to create the issue
-        if [ "$ACTION" != "reopened" ]; then
-          echo "Action is not 'created'. Exiting."
-          exit 0  # Exit with success status (no issue creation)
-        fi
-        
-        # If the action is "created," proceed to create the issue
-        SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
-        HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-        ASSIGNEE="srkambham"  # Specify the assignee's username here
-        echo $SECRET
-        echo $HTML_URL
-        ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
-        echo "GitHub Issue Creation Response: $ISSUE_RESPONSE"
     
     - name: Issue Created
       if: success()
