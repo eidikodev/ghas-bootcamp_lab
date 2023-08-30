@@ -38,7 +38,7 @@ jobs:
         REPO_OWNER="${{ github.repository_owner }}"
         REPO_NAME="${{ github.event.repository.name }}"
         DELIVERIES=$(cat deliveries.json)
-        echo $DELIVERIES
+        echo "Looping Deliveries"
         for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
           _jq() {
               echo ${DELIVERIE} | base64 --decode | jq -r ${1}
