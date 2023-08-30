@@ -39,9 +39,9 @@ jobs:
         REPO_NAME="${{ github.event.repository.name }}"
         DELIVERIES=$(cat deliveries.json)
         echo $DELIVERIES
-        for DELI in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
+        for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
           _jq() {
-              echo ${DELI} | base64 --decode | jq -r ${1}
+              echo ${DELIVERIE} | base64 --decode | jq -r ${1}
             }
           DELIVERY_ID=$(_jq '.id')
           echo $DELIVERY_ID
@@ -60,6 +60,7 @@ jobs:
           if [ "$ACTION" != "reopened" ]; then
             echo "Action is not 'created'. Skipping further process for delivery ID: $DELIVERY_ID"
           else
+            echo "Action is 'created'. Continuing further Issue creation process for delivery ID: $DELIVERY_ID"
             SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
             ASSIGNEE="srkambham"  # Specify the assignee's username here
@@ -68,9 +69,10 @@ jobs:
             ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
             echo "GitHub Issue Creation Response:"
           fi
+          echo "======================================================================"
         done
         echo "======================================================================"
     
     - name: Issue Created
       if: success()
-      run: echo "GitHub issue created successfully."
+      run: echo "GitHub issues created for deliveries, of action created, successfully."
