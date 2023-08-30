@@ -37,6 +37,7 @@ jobs:
         REPO_NAME="${{ github.event.repository.name }}"
         DELIVERIES="${{ steps.extract-delivery-id.outputs.deliveries }}"
         echo $DELIVERIES
+        echo "======================================================================"
         DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
         echo $DELIVERY_ID
         if [ -z "$DELIVERY_ID" ]; then
