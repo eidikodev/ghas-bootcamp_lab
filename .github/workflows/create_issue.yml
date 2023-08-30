@@ -2,9 +2,8 @@ name: Create GitHub Issue from Webhook Payload
 
 on:
   workflow_dispatch
-  #push:
-    #branches:
-      #- main  # Define the branch to trigger the workflow (adjust as needed)
+  # Add a webhook event that triggers the workflow
+
 
 jobs:
   create-issue:
@@ -20,10 +19,10 @@ jobs:
         # Extract Delivery ID from the webhook payload
         API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
         echo $API_RESPONSE
-        DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[0].id')
+        DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[] | select(.created_at | fromdateiso8601 < (now - 86400)) | select(.payload.action == "created") | .id')
         if [ -z "$DELIVERY_ID" ]; then
           echo "No deliveries found or error in API response."
-          break
+          exit 1
         fi
         echo "Delivery ID: $DELIVERY_ID"
         echo $API_RESPONSE >> deliveries.json
@@ -40,7 +39,7 @@ jobs:
         echo "Looping Deliveries"
         echo "======================================================================"
         
-        for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
+        for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | select(.created_at | fromdateiso8601 < (now - 86400)) | select(.payload.action == "reopened") | @base64'); do
           _jq() {
               echo ${DELIVERIE} | base64 --decode | jq -r ${1}
             }
@@ -51,7 +50,6 @@ jobs:
             echo "No Delivery ID found. Exiting. Skipping further process for this delivery"
             break
           fi
-
           PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
          
           if [ -z "$PAYLOAD" ]; then
