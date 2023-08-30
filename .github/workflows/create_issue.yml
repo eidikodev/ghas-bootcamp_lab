@@ -26,8 +26,9 @@ jobs:
           exit 1
         fi
         echo "Delivery ID: $DELIVERY_ID"
+        echo '$API_RESPONSE' >> json_data.json
+        echo "::set-output name=deliveries::$(cat json_data.json)"
         echo "::set-output name=delivery_id::$DELIVERY_ID"
-        echo "::set-output name=deliveries::$API_RESPONSE"
     
     - name: Get Webhook Payload
       id: get-webhook-payload
@@ -36,8 +37,8 @@ jobs:
         TOKEN="${{ secrets.GITHUB_TOKEN }}"
         REPO_OWNER="${{ github.repository_owner }}"
         REPO_NAME="${{ github.event.repository.name }}"
-        DELIVERIES="${{ steps.extract-delivery-id.outputs.deliveries }}"
-        echo $DELIVERIES
+        json_data=$(cat json_data.json)
+        echo $json_data
         echo "======================================================================"
         DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
         echo $DELIVERY_ID
