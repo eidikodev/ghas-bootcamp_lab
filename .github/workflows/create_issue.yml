@@ -30,7 +30,7 @@ jobs:
         deliveries="${{ steps.get-webhook-deliveries.outputs.deliveries }}"
 
          # Extract the owner's username from the repository information
-          OWNER_USERNAME=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}" | jq -r '.owner.login')
+          OWNER_USERNAME=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/eidikodev/ghas-bootcamp_lab" | jq -r '.owner.login')
         
         for delivery in $(echo "$deliveries" | jq -r '.[].id'); do
           # Get the webhook payload using the Delivery ID
