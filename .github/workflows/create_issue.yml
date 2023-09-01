@@ -18,10 +18,19 @@ jobs:
         # Get all webhook deliveries
         API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
         echo "::set-output name=deliveries::$API_RESPONSE"
+
+    - name: Get Repository Information
+      id: get-repo-info
+      run: |
+          REPO_INFO=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/EiDIKO/MavenWeb")
+          echo "::set-output name=repo-info::$REPO_INFO"
     
     - name: Create Issues
       run: |
         deliveries="${{ steps.get-webhook-deliveries.outputs.deliveries }}"
+
+        # Extract the owner's username from the repository information
+          OWNER_USERNAME=$(echo "${{ steps.get-repo-info.outputs.repo-info }}" | jq -r '.owner.login')
         
         for delivery in $(echo "$deliveries" | jq -r '.[].id'); do
           # Get the webhook payload using the Delivery ID
@@ -42,9 +51,8 @@ jobs:
           if [ "$ACTION" == "closed_by_user" ] && [ "$TIME_DIFF" -le 86400 ]; then
             URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.url')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-            # Specify the assignee's username here
-            
-            # Create an issue
+                        
+            # Create an issue with owner as the assignee
             echo "Creating issue for Delivery ID: $delivery"
             ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$URL\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/${{ github.repository }}/issues")
             
