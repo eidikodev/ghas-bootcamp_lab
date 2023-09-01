@@ -42,7 +42,7 @@ jobs:
           if [ "$ACTION" == "closed_by_user" ] && [ "$TIME_DIFF" -le 86400 ]; then
             URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.url')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-            ASSIGNEE="srkambham"  # Specify the assignee's username here
+            # Specify the assignee's username here
             
             # Create an issue
             echo "Creating issue for Delivery ID: $delivery"
