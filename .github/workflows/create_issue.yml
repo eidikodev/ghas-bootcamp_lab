@@ -73,7 +73,7 @@ jobs:
             echo "Action is 'reopened' and within the last 24 hours. Continuing further Issue creation process for delivery ID: $DELIVERY_ID"
             SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-            ASSIGNEE=$(echo "$COLLABORATOR_LOGINS" | tr '\n' ',' | sed 's/,$//')  # Assign all admin collaborators
+            ASSIGNEE=$(echo "$COLLABORATOR_LOGINS" | jq -r '.request.login')  
             echo $SECRET
             echo $HTML_URL
             echo $ASSIGNEE
