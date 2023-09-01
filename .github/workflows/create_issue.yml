@@ -22,7 +22,7 @@ jobs:
     - name: Get Repository Information
       id: get-repo-info
       run: |
-          REPO_INFO=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/EiDIKO/MavenWeb")
+          REPO_INFO=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/eidikodev/ghas-bootcamp_lab")
           echo "::set-output name=repo-info::$REPO_INFO"
     
     - name: Create Issues
