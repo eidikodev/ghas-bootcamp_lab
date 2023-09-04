@@ -27,7 +27,6 @@ jobs:
           fi
           echo "Delivery ID: $DELIVERY_ID"
           echo $API_RESPONSE >> deliveries.json
-
       - name: Get Admin Collaborators
         id: get-admin-collaborators
         run: |
@@ -38,7 +37,6 @@ jobs:
             ASSIGNEE=$(echo "$COLLABORATORS" | jq -r '.[] | select(.role_name == "admin") | .login' | head -n 1)
           fi
           echo "Assignee: $ASSIGNEE" >> assignee.txt
-
       - name: Get Webhook Payload
         id: get-webhook-payload
         run: |
@@ -49,21 +47,15 @@ jobs:
            echo "Looping Deliveries"
            echo "======================================================================"
            for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
-           # $_jq() {
-           # echo ${1} | base64 --decode | jq -r ${2}
-           }
            _jq() {
            echo ${DELIVERIE} | base64 --decode | jq -r ${1}
            }
-           
            DELIVERY_ID=$(_jq '.id')
            echo $DELIVERY_ID
            if [ -z "$DELIVERY_ID" ]; then
            echo "No Delivery ID found. Exiting. Skipping further process for this delivery"
            break
            fi
-
-
            PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
            if [ -z "$PAYLOAD" ]; then
            echo "No payload found or error in API response.  Skipping further process for delivery $DELIVERY_ID"
@@ -88,10 +80,8 @@ jobs:
       
            # Use the ASSIGNEE obtained earlier
            echo "Assigning to: $ASSIGNEE"
-
-           # Correctly format the assignees field as an array with the GitHub username
            ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{"title":"$SECRET","body":"$HTML_URL","assignees":[$ASSIGNEE]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
-           # ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
+           #ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
            echo "GitHub Issue Creation Response:"
            echo "======================================================================"
            done
