@@ -29,14 +29,15 @@ jobs:
         id: get-admin-collaborators
         run: |
           COLLABORATORS=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/eidikodev/ghas-bootcamp_lab/collaborators")
-          ASSIGNEE=""
+          ASSIGNEES=()
 
           if [ -n "$COLLABORATORS" ]; then
-            ASSIGNEE=$(echo "$COLLABORATORS" | jq -r '.[] | select(.role_name == "admin") | .login' | head -n 1)
+            # Extract usernames of all admin collaborators and store them in ASSIGNEES array
+            mapfile -t ASSIGNEES < <(echo "$COLLABORATORS" | jq -r '.[] | select(.role_name == "admin") | .login')
           fi
 
-          echo "$ASSIGNEE" > assignee.txt
-          cat assignee.txt
+          # Write the usernames to assignee.txt
+          printf "%s\n" "${ASSIGNEES[@]}" > assignee.txt
 
       - name: Process Webhook Payloads
         id: process-payloads
@@ -45,7 +46,7 @@ jobs:
           REPO_OWNER="${{ github.repository_owner }}"
           REPO_NAME="${{ github.event.repository.name }}"
           DELIVERIES=$(cat deliveries.json)
-          ASSIGNEE=$(cat assignee.txt)
+          ASSIGNEES=$(cat assignee.txt)
 
           echo "Looping Deliveries"
           echo "======================================================================"
@@ -88,17 +89,11 @@ jobs:
             echo "Action is 'reopened' and within the last 24 hours. Continuing further Issue creation process for delivery ID: $DELIVERY_ID"
             SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-            ASSIGNEE=$(cat assignee.txt)
 
-            echo "Creating GitHub Issue"
-            ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
-
-            if [ -z "$ISSUE_RESPONSE" ]; then
-              echo "Error creating GitHub issue for delivery ID: $DELIVERY_ID"
-            else
-              echo "GitHub Issue Creation Response:"
-              echo "$ISSUE_RESPONSE"
-            fi
+            # Create GitHub issues and assign them to all admin collaborators
+            for ASSIGNEE in $ASSIGNEES; do
+              curl -s -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues"
+            done
 
             echo "======================================================================"
           done
