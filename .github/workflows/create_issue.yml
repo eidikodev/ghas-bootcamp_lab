@@ -30,7 +30,7 @@ jobs:
         run: |
           # Fetch collaborators of the repository and filter for those with the "admin" role
           COLLABORATORS=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/eidikodev/ghas-bootcamp_lab/collaborators")
-          ASSIGNEE=""
+          
           if [ -n "$COLLABORATORS" ]; then
             ASSIGNEE=$(echo "$COLLABORATORS" | jq -r '.[] | select(.role_name == "admin") | .login' | head -n 1)
           fi
@@ -58,6 +58,13 @@ jobs:
               echo "No Delivery ID found. Exiting. Skipping further process for this delivery"
               break
             fi
+            
+            # Debug output to check COLLABORATOR_LOGINS
+            echo "COLLABORATOR_LOGINS: $COLLABORATOR_LOGINS"
+
+            # Test assigning the issue to a specific admin collaborator
+           ASSIGNEE="Sunil0916"  # Replace "admin_username" with the actual username of an admin collaborator
+            
             PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
 
             if [ -z "$PAYLOAD" ]; then
