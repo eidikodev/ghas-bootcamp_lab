@@ -86,7 +86,13 @@ jobs:
            echo "======================================================================"
            done
            echo "======================================================================"
-         
+
+      - name: Debug Output
+        run: |
+          echo "ASSIGNEE: $ASSIGNEE"
+          echo "SECRET: $SECRET"
+          echo "HTML_URL: $HTML_URL"  
+          
       - name: Issue Created
         if: success()
         run: echo "GitHub issues created for deliveries, of action created, successfully."
