@@ -45,6 +45,7 @@ jobs:
           REPO_OWNER="${{ github.repository_owner }}"
           REPO_NAME="${{ github.event.repository.name }}"
           DELIVERIES=$(cat deliveries.json)
+          ASSIGNEE=$(cat assignee.txt)
 
           echo "Looping Deliveries"
           echo "======================================================================"
