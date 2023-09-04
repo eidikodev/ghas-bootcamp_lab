@@ -36,7 +36,8 @@ jobs:
           if [ -n "$COLLABORATORS" ]; then
             ASSIGNEE=$(echo "$COLLABORATORS" | jq -r '.[] | select(.role_name == "admin") | .login' | head -n 1)
           fi
-          echo "Assignee: $ASSIGNEE" >> assignee.txt
+          # echo "Assignee: $ASSIGNEE" >> assignee.txt
+          ASSIGNEE="Sunil0916"  # added username here
       - name: Get Webhook Payload
         id: get-webhook-payload
         run: |
@@ -90,7 +91,7 @@ jobs:
       - name: Debug Output
         run: |
           echo "ASSIGNEE: $ASSIGNEE"
-          echo "SECRET: $SECRET"
+          # echo "SECRET: $SECRET"
           echo "HTML_URL: $HTML_URL"  
           
       - name: Issue Created
