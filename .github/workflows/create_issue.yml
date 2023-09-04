@@ -11,33 +11,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Extract Deliveries
+      - name: Extract Delivery ID from Webhook Payload
         id: extract-delivery-id
         run: |
-          # Extract Delivery ID from the webhook payload
           API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
-          echo $API_RESPONSE
-          DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[0].id')
+          DELIVERY_ID=$(echo "$API_RESPONSE" | jq -r '.[0].id')
+
           if [ -z "$DELIVERY_ID" ]; then
             echo "No deliveries found or error in API response."
-            break
+            exit 1
           fi
+
           echo "Delivery ID: $DELIVERY_ID"
-          echo $API_RESPONSE >> deliveries.json
+          echo "$API_RESPONSE" >> deliveries.json
 
       - name: Get Admin Collaborators
         id: get-admin-collaborators
         run: |
-          # Fetch collaborators of the repository and filter for those with the "admin" role
           COLLABORATORS=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/eidikodev/ghas-bootcamp_lab/collaborators")
           ASSIGNEE=""
+
           if [ -n "$COLLABORATORS" ]; then
             ASSIGNEE=$(echo "$COLLABORATORS" | jq -r '.[] | select(.role_name == "admin") | .login' | head -n 1)
           fi
-          echo "Assignee: $ASSIGNEE" >> assignee.txt
 
-      - name: Get Webhook Payload
-        id: get-webhook-payload
+          echo "Assignee: $ASSIGNEE" > assignee.txt
+
+      - name: Process Webhook Payloads
+        id: process-payloads
         run: |
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
           REPO_OWNER="${{ github.repository_owner }}"
@@ -47,22 +48,22 @@ jobs:
           echo "Looping Deliveries"
           echo "======================================================================"
 
-          for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
+          for DELIVERY in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
             _jq() {
-                echo ${DELIVERIE} | base64 --decode | jq -r ${1}
-              }
+              echo "${DELIVERY}" | base64 --decode | jq -r "${1}"
+            }
             DELIVERY_ID=$(_jq '.id')
-            echo $DELIVERY_ID
 
             if [ -z "$DELIVERY_ID" ]; then
               echo "No Delivery ID found. Exiting. Skipping further process for this delivery"
-              break
+              continue
             fi
+
             PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
 
             if [ -z "$PAYLOAD" ]; then
-              echo "No payload found or error in API response.  Skipping further process for delivery $DELIVERY_ID"
-              break
+              echo "No payload found or error in API response. Skipping further process for delivery $DELIVERY_ID"
+              continue
             fi
 
             echo "Webhook Payload"
@@ -70,7 +71,7 @@ jobs:
 
             if [ "$ACTION" != "reopened" ]; then
               echo "Action is not 'reopened'. Skipping further process for delivery ID: $DELIVERY_ID"
-              continue  # Skip further processing for this delivery if it's not "reopened"
+              continue
             fi
 
             # Add the timestamp check here to process only within the last 24 hours
@@ -85,12 +86,17 @@ jobs:
             echo "Action is 'reopened' and within the last 24 hours. Continuing further Issue creation process for delivery ID: $DELIVERY_ID"
             SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
             HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-            # Use the ASSIGNEE obtained earlier
             ASSIGNEE=$(cat assignee.txt)
-            echo $SECRET
-            echo $HTML_URL
-            ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
-            echo "GitHub Issue Creation Response:"
+
+            echo "Creating GitHub Issue"
+            ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
+
+            if [ -z "$ISSUE_RESPONSE" ]; then
+              echo "Error creating GitHub issue for delivery ID: $DELIVERY_ID"
+            else
+              echo "GitHub Issue Creation Response:"
+              echo "$ISSUE_RESPONSE"
+            fi
 
             echo "======================================================================"
           done
