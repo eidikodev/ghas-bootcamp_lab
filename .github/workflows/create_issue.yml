@@ -36,6 +36,7 @@ jobs:
           fi
 
           echo "Assignee: $ASSIGNEE" > assignee.txt
+          cat assignee.txt
 
       - name: Process Webhook Payloads
         id: process-payloads
