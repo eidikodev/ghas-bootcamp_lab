@@ -42,70 +42,53 @@ jobs:
       - name: Get Webhook Payload
         id: get-webhook-payload
         run: |
-          TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          REPO_OWNER="${{ github.repository_owner }}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          DELIVERIES=$(cat deliveries.json)
+           TOKEN="${{ secrets.GITHUB_TOKEN }}"
+           REPO_OWNER="${{ github.repository_owner }}"
+           REPO_NAME="${{ github.event.repository.name }}"
+           DELIVERIES=$(cat deliveries.json)
+           echo "Looping Deliveries"
+           echo "======================================================================"
+           for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
+           _jq() {
+           echo ${DELIVERIE} | base64 --decode | jq -r ${1}
+           }
+           DELIVERY_ID=$(_jq '.id')
+           echo $DELIVERY_ID
+           if [ -z "$DELIVERY_ID" ]; then
+           echo "No Delivery ID found. Exiting. Skipping further process for this delivery"
+           break
+           fi
 
-          echo "Looping Deliveries"
-          echo "======================================================================"
-
-          for DELIVERIE in $(echo "${DELIVERIES}" | jq -r '.[] | @base64'); do
-            _jq() {
-                echo ${DELIVERIE} | base64 --decode | jq -r ${1}
-              }
-            DELIVERY_ID=$(_jq '.id')
-            echo $DELIVERY_ID
-
-            if [ -z "$DELIVERY_ID" ]; then
-              echo "No Delivery ID found. Exiting. Skipping further process for this delivery"
-              break
-            fi
-            
-            # Debug output to check COLLABORATOR_LOGINS
-            echo "COLLABORATOR_LOGINS: $COLLABORATOR_LOGINS"
-
-            # Test assigning the issue to a specific admin collaborator
-           ASSIGNEE="Sunil0916"  # Replace "admin_username" with the actual username of an admin collaborator
-            
-            PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
-
-            if [ -z "$PAYLOAD" ]; then
-              echo "No payload found or error in API response.  Skipping further process for delivery $DELIVERY_ID"
-              break
-            fi
-
-            echo "Webhook Payload"
-            ACTION=$(echo "$PAYLOAD" | jq -r '.action')
-
-            if [ "$ACTION" != "reopened" ]; then
-              echo "Action is not 'reopened'. Skipping further process for delivery ID: $DELIVERY_ID"
-              continue  # Skip further processing for this delivery if it's not "reopened"
-            fi
-
-            # Add the timestamp check here to process only within the last 24 hours
-            CREATED_AT=$(echo "$PAYLOAD" | jq -r '.created_at')
-            OLDEST_ALLOWED_TIMESTAMP=$(date -d '24 hours ago' --rfc-3339=seconds)
-
-            if [ "$CREATED_AT" \< "$OLDEST_ALLOWED_TIMESTAMP" ]; then
-              echo "Delivery ID $DELIVERY_ID is older than 24 hours. Skipping further process."
-              continue
-            fi
-
-            echo "Action is 'reopened' and within the last 24 hours. Continuing further Issue creation process for delivery ID: $DELIVERY_ID"
-            SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
-            HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-            # Use the ASSIGNEE obtained earlier
-            ASSIGNEE=$(cat assignee.txt)
-            echo $SECRET
-            echo $HTML_URL
-            ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
-            echo "GitHub Issue Creation Response:"
-
-            echo "======================================================================"
-          done
-          echo "======================================================================"
-
+           PAYLOAD=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries/${DELIVERY_ID}")
+           if [ -z "$PAYLOAD" ]; then
+           echo "No payload found or error in API response.  Skipping further process for delivery $DELIVERY_ID"
+           break
+           fi
+           echo "Webhook Payload"
+           ACTION=$(echo "$PAYLOAD" | jq -r '.action')
+           if [ "$ACTION" != "reopened" ]; then
+           echo "Action is not 'reopened'. Skipping further process for delivery ID: $DELIVERY_ID"
+           continue  # Skip further processing for this delivery if it's not "reopened"
+           fi
+           # Add the timestamp check here to process only within the last 24 hours
+           CREATED_AT=$(echo "$PAYLOAD" | jq -r '.created_at')
+           OLDEST_ALLOWED_TIMESTAMP=$(date -d '24 hours ago' --rfc-3339=seconds)
+           if [ "$CREATED_AT" \< "$OLDEST_ALLOWED_TIMESTAMP" ]; then
+           echo "Delivery ID $DELIVERY_ID is older than 24 hours. Skipping further process."
+           continue
+           fi
+           echo "Action is 'reopened' and within the last 24 hours. Continuing further Issue creation process for delivery ID: $DELIVERY_ID"
+           SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
+           HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
+      
+           # Use the ASSIGNEE obtained earlier
+           echo "Assigning to: $ASSIGNEE"
+           ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
+           echo "GitHub Issue Creation Response:"
+           echo "======================================================================"
+           done
+           echo "======================================================================"
+         
       - name: Issue Created
         if: success()
         run: echo "GitHub issues created for deliveries, of action created, successfully."
