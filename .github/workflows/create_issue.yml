@@ -1,7 +1,10 @@
 name: Create GitHub Issue from Webhook Payload
 
 on:
-  workflow_dispatch
+  push:
+    branches:
+      - sunil0916-patch-assignee-7.1
+      # workflow_dispatch
 
 jobs:
   create-issue:
