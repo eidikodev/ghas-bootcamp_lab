@@ -48,13 +48,13 @@ jobs:
         # Extract the "action" field from the payload
         ACTION=$(echo "$PAYLOAD" | jq -r '.action')
         
-        # Check if the action is "created" and proceed to create the issue
+        # Check if the action is not "reopened" or "created" then proceed to Exit
         if [ "$ACTION" != "reopened" ] && [ "$ACTION" != "created" ]; then
-          echo "Action is not 'created'. Exiting."
+          echo "Action is not "reopened" or 'created'. Exiting."
           exit 0  # Exit with success status (no issue creation)
         fi
         
-        # If the action is "created," proceed to create the issue
+        # If the action is  "reopened" or "created," proceed to create the issue
         SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
         HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
         
