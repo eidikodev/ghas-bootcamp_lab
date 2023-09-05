@@ -4,7 +4,7 @@ on:
   workflow_dispatch
   #push:
     #branches:
-      #- main  # Define the branch to trigger the workflow (adjust as needed)
+      #- main  # Define the branch to trigger the workflow (modify as needed)
 
 jobs:
   create-issue:
@@ -35,8 +35,6 @@ jobs:
         REPO_OWNER="${{ github.repository_owner }}"
         REPO_NAME="${{ github.event.repository.name }}"
         DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
-        echo "Pusher: $GITHUB_ACTOR"
-        echo $GITHUB_ACTOR
         if [ -z "$DELIVERY_ID" ]; then
           echo "No Delivery ID found. Exiting."
           exit 1
@@ -52,7 +50,7 @@ jobs:
         ACTION=$(echo "$PAYLOAD" | jq -r '.action')
         
         # Check if the action is "created" and proceed to create the issue
-        if [ "$ACTION" != "reopened" ]; then
+        if [ "$ACTION" != "reopened" ] && [ "$ACTION" != "created" ]; then
           echo "Action is not 'created'. Exiting."
           exit 0  # Exit with success status (no issue creation)
         fi
@@ -60,7 +58,13 @@ jobs:
         # If the action is "created," proceed to create the issue
         SECRET=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.secret_type')
         HTML_URL=$(echo "$PAYLOAD" | jq -r '.request.payload.alert.html_url')
-        ASSIGNEE="srkambham"  # Specify the assignee's username here
+        
+        # ASSIGNEE="srkambham"  # Specify the assignee's username here
+        # ASSIGNEE=$( git log -1 --format="%an" "$GITHUB_SHA" )
+        #echo "ASSIGNEE value is: $ASSIGNEE"
+        echo "Pusher: $GITHUB_ACTOR"
+        ASSIGNEE="$GITHUB_ACTOR"
+        echo $ASSIGNEE
         echo $SECRET
         echo $HTML_URL
         ISSUE_RESPONSE=$(curl -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
