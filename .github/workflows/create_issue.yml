@@ -17,6 +17,7 @@ jobs:
       id: extract-delivery-id
       run: |
         # Extract Delivery ID from the webhook payload
+        echo "Pusher: $GITHUB_SHA"
         API_RESPONSE=$(curl -s -X GET -u ${{ secrets.API_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/hooks/${{ secrets.WEBHOOK_HOOK_ID }}/deliveries")
         DELIVERY_ID=$(echo $API_RESPONSE | jq -r '.[0].id')
         
@@ -32,6 +33,7 @@ jobs:
       id: get-webhook-payload
       run: |
         # Get the webhook payload using the Delivery ID
+        echo "Pusher: $GITHUB_ACTOR"
         DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
         
         if [ -z "$DELIVERY_ID" ]; then
@@ -59,6 +61,7 @@ jobs:
       run: |
         # Extract relevant information from the payload
         #ACTION=$(echo "$PAYLOAD" | jq -r '.action')
+        echo "Pusher: $GITHUB_SHA"
         HTML_URL=$(echo "$PAYLOAD" | jq -r '.repository.html_url')
         FULL_NAME=$(echo "$PAYLOAD" | jq -r '.repository.full_name')
         
