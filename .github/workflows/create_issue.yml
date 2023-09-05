@@ -1,8 +1,8 @@
 name: Create GitHub Issue from Webhook Payload
 
 on:
-  workflow_dispatch
-  #push:
+  #workflow_dispatch
+  push:
     #branches:
       #- main  # Define the branch to trigger the workflow (adjust as needed)
 
@@ -13,6 +13,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Display the push payload
+      run: |
+         echo "Event name: $GITHUB_EVENT_NAME"
+         echo "Pusher: $GITHUB_ACTOR"
+         echo "Repository: $GITHUB_REPOSITORY"
+         echo "Ref: $GITHUB_REF"
+         # Access other payload data as needed
     
     - name: Extract Deliveries
       id: extract-delivery-id
