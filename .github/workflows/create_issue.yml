@@ -36,6 +36,7 @@ jobs:
         REPO_NAME="${{ github.event.repository.name }}"
         DELIVERY_ID="${{ steps.extract-delivery-id.outputs.delivery_id }}"
         echo "Pusher: $GITHUB_ACTOR"
+        echo $GITHUB_ACTOR
         if [ -z "$DELIVERY_ID" ]; then
           echo "No Delivery ID found. Exiting."
           exit 1
