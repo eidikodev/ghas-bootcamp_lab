@@ -91,6 +91,14 @@ jobs:
             ASSIGNEE=$(cat assignee.txt)
 
             echo "Creating GitHub Issue"
+            COLLABORATORS=$(curl -s -X GET -u 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 "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/collaborators")
+		        echo "Collaborators are - "
+		        echo "$COLLABORATORS"
+		
+		        if [ -n "$COLLABORATORS" ]; then
+		          ASSIGNEE=$(echo "$COLLABORATORS" | jq -r '.[] | select(.role_name == "admin") | .login' | head -n 1)
+		        fi
+		        echo "Admin for $REPO_OWNER/$REPO_NAME is -> $ASSIGNEE"
             ISSUE_RESPONSE=$(curl -s -X POST -u ${{ secrets.API_TOKEN }} -d "{\"title\":\"$SECRET\",\"body\":\"$HTML_URL\",\"assignees\":[\"$ASSIGNEE\"]}" "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/issues")
 
             if [ -z "$ISSUE_RESPONSE" ]; then
