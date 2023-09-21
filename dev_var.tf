@@ -1,0 +1,4 @@
+AWS_REGION="us-east-1"
+GOOGLE_API_KEY="AIzaSyDvc2t8M5wjfDonZ1e4xG3wjFcCWHIN0yE"
+MAILGUN_API_KEY="key-a58a22222511a11a1a1ba1bbdf11f1z8"
+STRIPE_API_KEY="sk_live_devboaaedcct1DfwS2ClCIKljW"
