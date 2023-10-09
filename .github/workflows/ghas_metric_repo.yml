@@ -1,6 +1,8 @@
 name: "GitHub Advanced Security - Metrics Report Action"
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '* * * * *'
+  #workflow_dispatch:
     #types:
       #-  secret_scanning_alert
   #schedule:
